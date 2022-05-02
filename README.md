@@ -1,9 +1,9 @@
 # &mu;os
 
-Micro OS
+### Micro OS
 
 Big operating systems try to use a single source base for all supported
-architectures and machines, with reams and layers of `#ifdef` statements,
+architectures and machines, with reams of `#ifdef` statements,
 making them difficult to understand, debug, maintain, and use.  **&mu;os**
 tries (yet another) minimal approach, favoring to entertain a few duplicate
 files which tend to be architecture or machine specific. Assembly files
@@ -32,7 +32,8 @@ For now &mu;os is allways a static monolithic image.  [^1]
 
 ### Features
 
-- **SMP** is being debugged.
+- **SMP** is being debugged. (hey, is there an hvc or smc for rpi400's
+  start4.elf?)
 
 - No interrupts. Just use another core (you will like the improved latency).
 
@@ -121,11 +122,11 @@ some thought.
 - (qemu will wait for a remote debugger, so in another BIG terminal type:)
 - `~/git/pgdb/pgdb.py -gccmap hello.map`
 - (press 'h' and 'l' to close the help and log windows)
-- (press 'J' to run all cpus and skip to the hilighted-in-white address - skipping the qemu boot loader)
+- (press 'J' to run all cpus and skip to the hilighted-in-white address - in this case skipping the qemu boot loader)
 - (press 's' to single-step the active cpu, or 'S' for all of them)
 - (when done press 'Q' to exit both pgdb and qemu)
 - (if qemu is left running: ctrl-a,c will switch to the qemu monitor and 'quit' will exit)
 
 ---
-_Generate HTML via:_
+_Markdown to HTML:_
 `python -m markdown README.md > /tmp/md.html`
