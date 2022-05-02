@@ -11,7 +11,7 @@ INC = -I../inc -I../arch/$(ARCH) -I../arch/$(ARCH)/mach/$(MACH)
 	$(TOOLCHAIN_PFX)gcc $(DFLAGS) $(CFLAGS) $(INC) -c $< -o $(@F)
 	$(TOOLCHAIN_PFX)objdump -S $(@F) > $(notdir $*).lst
 
-# using gcc to assemble so .ifdef is understood
+# using gcc to assemble so #if and #ifdef are understood
 .s.o:
 	$(TOOLCHAIN_PFX)gcc -x assembler-with-cpp $(DFLAGS) $(AFLAGS) -c $< -o $(@F)
 	$(TOOLCHAIN_PFX)objdump -d $(@F) > $(notdir $*).lst

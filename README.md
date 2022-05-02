@@ -52,10 +52,11 @@ For now &mu;os is allways a static monolithic image.  [^1]
   right? Keep it lean and straight forward and it won't be too hard.
 
 - **Memory management**, if needed, is a simple slab-like arrangement: a
-  limited number of user selected sizes, and quantity of 'pages' of that size.
-  You configure it all. It is very fast, cannot fragment, and always aligned,
-  but yes it does waste space. However when you have megs or gigs of RAM,
-  _time-efficient_ heap management is usually better than space-efficiency.
+  limited number of user selected power-of-2 sizes, and quantity of 'pages'
+  of that size.  You configure it all. It is very fast, cannot fragment,
+  and always aligned, but yes it does waste space. However when you have
+  megs or yeah gigs of RAM, _time-efficient_ heap management is usually
+  better than space-efficiency.
 
 - **Multiacritecture** is supported ... but only a few for the moment.
   And features are not present in all architectures - some are ahead of
@@ -69,10 +70,11 @@ For now &mu;os is allways a static monolithic image.  [^1]
 
 ### Build
 
-I prefer the vpath approach to multi-arch build environments documented by
+I prefer the vpath approach to multi-arch build environments documented two
+decades ago by
 [Paul Smith](http://make.mad-scientist.net/papers/multi-architecture-builds).
-The following uses GNU make directly to build the &mu;os hello app for armv8
-to run in QEMU:
+From a build-\* directory, the following uses GNU make directly to build the
+&mu;os hello app for armv8 to run in QEMU:
 
     $ make APP=hello -f ../arch/armv8/mach/qemu/mk hello
 
@@ -113,13 +115,13 @@ some thought ...
 - `pushd ~/git`
 - `git clone https://github.com/duanev/pgdb.git --branch v0 --single-branch`
 - `popd`
-- ./umake armv8 qemu hello
-- cd build-armv8-qemu-hello
-- `qemu-system-aarch64 ..(use the cmdline shown).. -kernel hello.bin` **-s -S**
-- (qemu will wait for a remote debugger, so on another BIG terminal type:)
+- `./umake armv8 qemu hello`
+- `cd build-armv8-qemu-hello`
+- `qemu-system-aarch64 ..(use the cmdline shown by umake)..` **-s -S**
+- (qemu will wait for a remote debugger, so in another BIG terminal type:)
 - `~/git/pgdb/pgdb.py -gccmap hello.map`
 - (press 'h' and 'l' to close the help and log windows)
-- (press 'J' to run all cpus and skip to the hilighted address - skipping the qemu boot loader)
+- (press 'J' to run all cpus and skip to the hilighted-in-white address - skipping the qemu boot loader)
 - (press 's' to single-step the active cpu, or 'S' for all of them)
 - (when done press 'Q' to exit both pgdb and qemu)
 - (if qemu is left running: ctrl-a,c will switch to the qemu monitor and 'quit' will exit)

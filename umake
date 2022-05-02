@@ -1,9 +1,6 @@
 #!/bin/bash
-# because 'all: $(MAKECMDGOALS)' doesn't work properly.
-# why can't MAKECMDGOALS be used like an ENV VAR in gnu make?
-# and taking the liberty to add some features to this script ...
 #
-# ./umake       - list what works (green), kinda (yellow), broke (red)
+# ./umake       - list what works (green), issues (yellow), broke (red)
 #
 # ./umake <arch> <mach> <app>
 # ./umake       - (in uos dir) prompt for a arch+mach+app to build
@@ -20,8 +17,6 @@ YELLOW="[0:33m"
 
 # where are we, and what is possible
 UOSSRC=$(dirname $0)
-amlst=$(cd $UOSSRC; ls -d arch/*/mach/* 2>/dev/null)
-#echo amlst $amlst
 
 function show_what_works {
     printf "${HI}\xce\xbcos${LO} build script:\n"
