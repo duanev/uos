@@ -1,4 +1,4 @@
 MEM_SIZE = 16
 SRCS = boot exc exctbl libarch libc libbitmap libmem mem_init test main
 WORKS = qemu
-BROKEN = rpi400
+BROKEN = rpi400 {printf fails: varags?}

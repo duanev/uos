@@ -69,7 +69,8 @@ smp_entry:
     ldr     x3, [x0]
     mov     sp, x3
     .extern smp_newcpu              // provided by smp.c
-    b       smp_newcpu
+    bl      smp_newcpu
+    b       .                       // hang
 #   endif
 
 // ---- pl011 uart -------------------------

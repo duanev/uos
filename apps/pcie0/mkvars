@@ -7,4 +7,4 @@ QEMU_RUN_CMD += \
       -device nvme,serial=s2,drive=n2,id=d2,bus=r2 -drive file=dskb.img,if=none,format=raw,id=n2
 NOTES += "dd if=/dev/zero of=dska.img bs=4K count=16; dd if=/dev/zero of=dskb.img bs=4K count=16"
 WORKS = qemu
-BROKEN = rpi400
+BROKEN = rpi400 {printf fails: varags?}

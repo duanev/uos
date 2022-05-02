@@ -181,10 +181,11 @@ printf(const char * fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
+    struct thread * th = get_thread_data();
 
     // for the moment, tls is just a printf buffer
-    int rc = _vsprintf(get_tp(), fmt, ap);
-    puts(get_tp());
+    int rc = _vsprintf(th->print_buf, fmt, ap);
+    puts(th->print_buf);
 
     va_end(ap);
     return rc;
@@ -197,11 +198,12 @@ printi(int depth, const char * fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
+    struct thread * th = get_thread_data();
 
     // for the moment, tls is just a printf buffer
-    int rc = _vsprintf(get_tp(), fmt, ap);
+    int rc = _vsprintf(th->print_buf, fmt, ap);
     puts(Indent + strlen(Indent) - 1 - depth * 4);
-    puts(get_tp());
+    puts(th->print_buf);
 
     va_end(ap);
     return rc;

@@ -19,10 +19,12 @@ main(void)
 {
     extern u32 * dtb;
 
+#   ifdef rpi4  // rpi400 debug
     strcpy(get_tp(), "test...\n\0");
     con_puts(get_tp());
     sprintf(get_tp(), "one %s three\n", "two");
     con_puts(get_tp());
+#   endif
 
     printf("\xce\xbcos start dtb[%x] el%d tp0(%x)\n", *dtb, get_exec_level(), get_tp());
 

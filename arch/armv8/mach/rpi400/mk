@@ -4,7 +4,7 @@ MACH = rpi400
 
 TOOLCHAIN_PFX ?= aarch64-linux-gnu-
 AFLAGS = -mcpu=cortex-a72
-CFLAGS = -g -O1 -DMAX_CPUS=1
+CFLAGS = -g -O1 -DMAX_CPUS=1 -Drpi4
 CFLAGS += -mstrict-align -mcpu=cortex-a72 -mno-outline-atomics -march=armv8-a+nofp
 CFLAGS += -nostdlib -fno-builtin-printf -fno-builtin-puts
 

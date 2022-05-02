@@ -30,7 +30,8 @@ distclean:
 
 
 # maybe need more of these ... like one per lib*.c
-libarch.o: ../arch/$(ARCH)/arch.h
+libarch.o:  ../arch/$(ARCH)/arch.h
+libsmp.o:   ../arch/$(ARCH)/arch.h
 
 uos.h: ../inc/_bitmap.h  ../inc/_c.h  ../inc/_gate.h  ../inc/_mem.h  ../inc/_smp.h  ../inc/_types.h
 

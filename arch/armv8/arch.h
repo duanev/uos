@@ -83,3 +83,51 @@ static inline void cause_exc(void)
     int x = 0;
     asm ("msr  vbar_el3, %0" : : "r" (x));
 }
+
+// call the supervisor (a kernel, hypervisor, or secure monitor)
+// to enable a cpu core
+static inline int
+cpu_enable(int cpu, struct thread * th)
+{
+    int rc = 0;
+#   ifdef HVC
+    // http://wiki.baylibre.com/doku.php?id=psci
+    //   psci {
+    //          migrate = < 0xc4000005 >;
+    //          cpu_on = < 0xc4000003 >;
+    //          cpu_off = < 0x84000002 >;
+    //          cpu_suspend = < 0xc4000001 >;
+    //          method = "hvc";
+    //          compatible = "arm,psci-0.2\0arm,psci";
+    //   };
+    //
+    // power on cpu N, point it at the smp_entry boot code,
+    // and use the 'th' pointer as 'context'
+    asm volatile (
+        "ldr  x0, =0xc4000003   \n" // cpu on
+        "mov  x1, %1            \n" // cpu number
+        "ldr  x2, =smp_entry    \n" // func addr
+        "mov  x3, %2            \n" // context id (th)
+        "hvc  0                 \n" // hypervisor fn 0
+        "mov  %0, x0            \n"
+    : "=r" (rc) : "r" (cpu), "r" (th) : "x0","x1","x2","x3");
+#   endif
+
+#   ifdef SMC
+    //  psci {
+    //          compatible = "arm,psci-0.2";
+    //          method = "smc";
+    //  };
+    asm volatile (
+        "ldr  x0, =0xc4000003   \n" // cpu on
+        "mov  x1, %1            \n" // cpu number
+        "ldr  x2, =smp_entry    \n" // func addr
+        "mov  x3, %2            \n" // context id (th)
+        "smc  0                 \n" // secure monitor fn 0
+        "mov  %0, x0            \n"
+    : "=r" (rc) : "r" (cpu), "r" (th) : "x0","x1","x2","x3");
+#   endif
+
+    return rc;
+}
+
