@@ -87,7 +87,7 @@ script keeps build syntax straight forward:
     $ ./umake armv8 qemu hello
 
 You can run it in the &mu;os root to create build directories, and then
-you can run it from the build directories with `../umake
+you can run it from the build directories with `../umake` (no args).
 
 ### Philosophy
 
@@ -107,7 +107,7 @@ Rewrite it all, learn from the past, only bring what we really need.
 [^1] Eventually I want the entire OS and all shared libraries to be
 *runtime up-gradable* ... yes, that's right, *swap* the kernel or any
 library out from underneath a running system ... but that will take
-some thought ...
+some thought.
 
 [^2] QEMU debug is pretty nice with one of my other projects: **pgdb**.
 
