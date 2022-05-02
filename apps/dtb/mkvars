@@ -1,0 +1,4 @@
+MEM_SIZE = 16
+SRCS = boot exc exctbl libc libdtb main
+WORKS = qemu
+BROKE = rpi400

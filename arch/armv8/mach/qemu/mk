@@ -1,0 +1,35 @@
+
+ARCH = armv8
+MACH = qemu
+SRCS = boot exc exctbl
+
+QEMU_RUN_CMD = qemu-system-aarch64 -M virt -cpu cortex-a72 -nographic -serial mon:stdio -kernel $(APP).bin
+
+TOOLCHAIN_PFX ?= aarch64-linux-gnu-
+DFLAGS = -DQEMU_VIRT -DHVC
+CFLAGS = -g -O1
+CFLAGS += -mstrict-align -mcpu=cortex-a72 -mno-outline-atomics -march=armv8-a+nofp
+CFLAGS += -nostdlib -fno-builtin-printf -fno-builtin-puts
+AFLAGS = -Wa,-mcpu=cortex-a72
+
+include ../apps/$(APP)/mkvars
+
+LDSCRIPT = m$(MEM_SIZE)
+
+include ../mk
+
+
+all: $(APP)
+
+$(APP): $(APP).elf
+	$(TOOLCHAIN_PFX)objcopy -O binary $(APP).elf $(APP).bin
+	grep -E '_data_start|rela\.text|eh_frame' $(APP).map
+	@echo press [5mctrl-a,c[0m to switch to the qemu monitor, then \'quit\' to exit.
+	@echo ""
+	@echo $(NOTES)
+	@echo ""
+	@echo $(QEMU_RUN_CMD)
+	@echo ""
+
+#@echo qemu-system-aarch64 -M virt -cpu cortex-a72 -nographic -serial mon:stdio -kernel $(APP).bin -smp 4
+

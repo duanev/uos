@@ -1,0 +1,26 @@
+
+ARCH = armv8
+MACH = rpi400
+
+TOOLCHAIN_PFX ?= aarch64-linux-gnu-
+AFLAGS = -mcpu=cortex-a72
+CFLAGS = -g -O1 -DMAX_CPUS=1
+CFLAGS += -mstrict-align -mcpu=cortex-a72 -mno-outline-atomics -march=armv8-a+nofp
+CFLAGS += -nostdlib -fno-builtin-printf -fno-builtin-puts
+
+include ../apps/$(APP)/mkvars
+
+LDSCRIPT = sd$(MEM_SIZE)
+
+include ../mk
+
+
+all: $(APP)
+
+$(APP): $(APP).elf
+	$(TOOLCHAIN_PFX)objcopy -O binary $(APP).elf $(APP).bin
+	grep -E '_data_start|rela\.text|eh_frame' $(APP).map
+	@echo ""
+	@echo $(NOTES)
+	@echo ""
+

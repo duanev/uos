@@ -1,0 +1,10 @@
+MEM_SIZE = 16
+SRCS = boot exc exctbl libc main
+QEMU_RUN_CMD += \
+    -device pcie-root-port,bus=pcie.0,addr=8.0,id=r1 \
+      -device nvme,serial=s1,drive=n1,id=d1,bus=r1 -drive file=dska.img,if=none,format=raw,id=n1 \
+    -device pcie-root-port,bus=r1,id=r2,chassis=1 \
+      -device nvme,serial=s2,drive=n2,id=d2,bus=r2 -drive file=dskb.img,if=none,format=raw,id=n2
+NOTES += "dd if=/dev/zero of=dska.img bs=4K count=16; dd if=/dev/zero of=dskb.img bs=4K count=16"
+WORKS = qemu
+BROKEN = rpi400

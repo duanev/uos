@@ -1,0 +1,110 @@
+#!/bin/bash
+# because 'all: $(MAKECMDGOALS)' doesn't work properly.
+# why can't MAKECMDGOALS be used like an ENV VAR in gnu make?
+# and taking the liberty to add some features to this script ...
+#
+# ./umake       - list what works (green), kinda (yellow), broke (red)
+#
+# ./umake <arch> <mach> <app>
+# ./umake       - (in uos dir) prompt for a arch+mach+app to build
+#
+# ../umake      - (in build dir) re-make this particular arch+mach+app
+
+MKCFG=.lastmk
+HI="[0:35m"
+LO="[0:37m"
+RED="[0:31m"
+GREEN="[0:32m"
+YELLOW="[0:33m"
+
+
+# where are we, and what is possible
+UOSSRC=$(dirname $0)
+amlst=$(cd $UOSSRC; ls -d arch/*/mach/* 2>/dev/null)
+#echo amlst $amlst
+
+function show_what_works {
+    printf "${HI}\xce\xbcos${LO} build script:\n"
+    echo "apps:"
+    for app in $(cd $UOSSRC/apps; ls -d * 2>/dev/null)
+    do
+        rd=" $RED$(grep BROKE $UOSSRC/apps/$app/mkvars | cut -d '=' -f 2)$LO"
+        gr=" $GREEN$(grep WORKS $UOSSRC/apps/$app/mkvars | cut -d '=' -f 2)$LO"
+        yl=" $YELLOW$(grep ISSUES $UOSSRC/apps/$app/mkvars | cut -d '=' -f 2)$LO"
+        printf "%16s:%s\n" $app "$gr$yl$rd"
+    done
+    echo ""
+    echo "pick an architecture, machine, and an application, then run:"
+    echo ""
+    echo "    \$ $0 ${OPTS} <arch> <mach> <app>"
+    echo ""
+}
+
+# capture the dash options to pass on to make(1) (they must be first)
+OPTS=""
+while true
+do
+    case $1 in
+    -*) OPTS="$OPTS $1"
+        shift ;;
+    *)  break ;;
+    esac
+done
+
+UOSARCH=$1
+UOSMACH=$2
+UOSAPP=$3
+
+[ ! -f $UOSSRC/mk ] && {
+    echo "$UOSSRC doesn't look like a uos source tree. maybe:"
+    echo "    $ git clone https://github.com/duanev/uos.git"
+    exit
+}
+
+[ -z "$UOSARCH" ] && {
+    # no cmdline args, is there a MKCFG?
+    [ ! -f $MKCFG ] && {
+        show_what_works
+        exit
+    }
+    . $MKCFG
+    echo "found $MKCFG - building ${HI}${UOSARCH} ${UOSMACH} ${UOSAPP}${LO} in $HI ${UOSBDIR}${LO}"
+}
+
+# validate choices by looking for needed scipts in the source directories
+ERR=0
+[ ! -f $UOSSRC/arch/$UOSARCH/mach/$UOSMACH/mk ] && {
+    echo "${HI}$UOSARCH $UOSMACH${LO} does not appear to be a valid uos arch+mach pair"
+    ERR=1
+}
+[ ! -f $UOSSRC/apps/$UOSAPP/mkvars ] && {
+    echo "${HI}$UOSAPP${LO} does not appear to be a valid uos app (no mkvars file)"
+    ERR=1
+}
+[ $ERR -ne 0 ] && {
+    # config is invalid
+    show_options
+    exit
+}
+
+# guess at a good build directory name
+[ -z "$UOSBDIR" ] && UOSBDIR=build-${UOSARCH}-${UOSMACH}-${UOSAPP}
+
+[ ! -d "$UOSSRC/$UOSBDIR" ] && {
+    echo -n "use ${HI}${UOSSRC}/${UOSBDIR}${LO} as the build directory? [Y/n] "
+    read ans
+    [[ $ans == n ]] && exit
+    mkdir ${UOSSRC}/${UOSBDIR}
+}
+
+cd ${UOSSRC}/${UOSBDIR}
+
+[ ! -f $MKCFG ] && {
+    echo "UOSBDIR=$UOSBDIR" > $MKCFG
+    echo "UOSARCH=$UOSARCH" >> $MKCFG
+    echo "UOSMACH=$UOSMACH" >> $MKCFG
+    echo "UOSAPP=$UOSAPP" >> $MKCFG
+}
+
+echo make $OPTS APP=$UOSAPP -f ../arch/$UOSARCH/mach/$UOSMACH/mk $UOSAPP
+make $OPTS APP=$UOSAPP -f ../arch/$UOSARCH/mach/$UOSMACH/mk $UOSAPP
