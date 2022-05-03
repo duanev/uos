@@ -53,15 +53,17 @@ start:
     bl      con_puts
 
     // ---- call main
+//  mov     x30, xzr
+//  mov     x29, xzr
 
     bl      main
-    b .                             // hang
 
     ldr     x0, =msg_done
     bl      con_puts
 
 //  ldr     x0, =0x84000009         // system reset
 //  hvc     0                       // secure monitor / hypervisor call fn 0
+    b .                             // hang
 
 // ---- pl011 uart -------------------------
 

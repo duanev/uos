@@ -63,6 +63,7 @@ test_mem_01(void)
     int err = 0;
     for (i = 0; i < 64; i++) {
         if (blk_rslt & ((u64)1 << i)) {
+            printf("  test_mem_01 %016lx %5d\n", map->blks[0], map->count); // debug rpi400
             err += mem_zfree(pool128k, base + i * 128 * 1024, 1);
             printf("  test_mem_01 %016lx %5d %d\n", map->blks[0], map->count, err);
         }
@@ -79,12 +80,13 @@ test_mem_01(void)
 
 #define MODULO  795028841
 #define STEP    360287471
-int     start = 0;              // optionally some starting value like 433494437
+u64     Rnd_start = 0;          // optionally some starting value like 433494437
 
-static u64 prand(void)
+static u64
+prand(void)
 {
-    u64 next = (start + STEP) % MODULO;
-    start = next;
+    u64 next = (Rnd_start + STEP) % MODULO;
+    Rnd_start = next;
     return next;
 }
 

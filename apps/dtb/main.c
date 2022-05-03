@@ -17,14 +17,15 @@ static void     save_console(char * nn, u64 val) { if (console == 0) console = (
 void
 main(void)
 {
-    extern u32 * dtb;
-
-#   ifdef rpi4  // rpi400 debug
+#   ifdef rpi4  // rpi400 u-boot debug
+    con_puts("xxx...\n");
     strcpy(get_tp(), "test...\n\0");
     con_puts(get_tp());
     sprintf(get_tp(), "one %s three\n", "two");
     con_puts(get_tp());
 #   endif
+
+    extern u32 * dtb;
 
     printf("\xce\xbcos start dtb[%x] el%d tp0(%x)\n", *dtb, get_exec_level(), get_tp());
 

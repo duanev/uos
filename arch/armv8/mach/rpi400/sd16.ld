@@ -1,9 +1,9 @@
 MEMORY
 {
-    code : org = 0x40080000, len = 16K
-    data : org = 0x40084000, len =  4K
-    bss  : org = 0x40085000, len = 12K
-    free : org = 0x40090000, len =  0K      /* needed for libmem and mem_init */
+    code : org = 0x00080000, len = 16K
+    data : org = 0x00084000, len =  4K
+    bss  : org = 0x00085000, len = 12K
+    free : org = 0x00090000, len =  0K      /* needed for libmem and mem_init */
 }
 
 SECTIONS
