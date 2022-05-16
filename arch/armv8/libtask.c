@@ -6,7 +6,7 @@ struct task {
     u64             tid;
     u64             flags;
     char          * name;
-    u64             sleep;
+    u64             _res0;
 
     taskfn          func;
     volatile void * arg;                        // volatile in case data is returned
@@ -16,13 +16,12 @@ struct task {
 
     // all the callee-saved regs
     // https://modexp.wordpress.com/2018/10/30/arm64-assembly
-    u64             x19, x20, x21, x22, x23, x24, x25, x26, x27, x28, fp, pc;
+    u64             x19, x20, x21, x22, x23, x24, x25, x26, x27, x28, fp, lr;
 
     // ensure the registers above remain in order
 #   define  X19_OFF __builtin_offsetof(struct task, x19)
 
     // keep struct size a multiple of 64 (currently 192)
-    // and keep sp....pc all in the same place!
 
     u64             _res1, _res2, _res3, _res4;
 };
@@ -35,102 +34,20 @@ static u64 next_tid = 1;
 
 MPMC_GATE_INIT(runq, RUNQ_MAX);
 
-static inline void
-armv8_set_sp(u64 sp)
-{
-    asm volatile("mov sp, %0" : : "r" (sp) : );
-}
 
-void inline
-save_task_context(struct task * tsk)
-{
-    asm ("stp x19, x20, [x0, %c[x19o]]\n"
-         "stp x21, x22, [x0, %c[x19o] + 0x10]\n"
-         "stp x23, x24, [x0, %c[x19o] + 0x20]\n"
-         "stp x25, x26, [x0, %c[x19o] + 0x30]\n"
-         "stp x27, x28, [x0, %c[x19o] + 0x40]\n"
-         "stp fp,  lr,  [x0, %c[x19o] + 0x50]\n" : : [x19o] "i" (X19_OFF) );
-
-    asm volatile("mov %0, sp"  : "=r" (tsk->sp) : );
-}
-
-void inline
-restore_task_context(struct task * tsk)
-{
-    asm ("ldp x19, x20, [x0, %c[x19o]]\n"
-         "ldp x21, x22, [x0, %c[x19o] + 0x10]\n"
-         "ldp x23, x24, [x0, %c[x19o] + 0x20]\n"
-         "ldp x25, x26, [x0, %c[x19o] + 0x30]\n"
-         "ldp x27, x28, [x0, %c[x19o] + 0x40]\n"
-         "ldp fp,  lr,  [x0, %c[x19o] + 0x50]\n" : : [x19o] "i" (X19_OFF) );
-
-    asm volatile("mov sp,  %0" : : "r" (tsk->sp) : );
-    // gcc needs x0 loaded last (go look at the disassembly)
-    asm volatile("mov x0,  %0" : : "r" (tsk->x0) : );
-}
-
-// noinline forces a consistent stack frame
-void __attribute__ ((noinline))
-yield(void)
-{
-    struct thread * volatile th = get_thread_data();
-
-    if (th->tsk) {
-        // if this thread is a running task, save the restore point
-        save_task_context(th->tsk);
-        add_item(runq, th->tsk);
-        th->tsk = 0;
-    }
-
-    // get the next task to run (and wait if needed)
-
-    remove_item_wwait(runq, th->tsk, struct task *);
-
-    // restore the selected task
-
-    restore_task_context(th->tsk);
-}
-
-void __attribute__ ((noinline))
-usleep(int usecs)
+inline char *
+get_task_name(void)
 {
     struct thread * th = get_thread_data();
-    struct task * tsk = th->tsk;
-    tsk->sleep = usecs + etime();
-
-    while (tsk->sleep > etime()) {
-        yield();
-        // this printf works well with TASK_TEST0 showing which cpus pick up this task
-        //printf("  %10x   %10d > %10d\n", tsk, tsk->sleep, etime());
-    }
+    return th->tsk->name;
 }
 
-// when a thread runs a task for the first time,
-// start_task() creates the initial stack frame
-
-void
-_start_task(struct task * tsk)
+inline u64
+get_task_id(void)
 {
-    printf("task %ld [%s] starting   [arg=0x%x,tsk=0x%x]\n", tsk->tid, tsk->name, tsk->arg, tsk);
-
-    tsk->func(tsk->arg);
-
-    printf("task %ld [%s] ending\n", tsk->tid, tsk->name);
-
     struct thread * th = get_thread_data();
-    // restore original thread stack (so we can use mem_free)
-    armv8_set_sp(th->sp);
-    // recover task data address
-    u64 mem = (u64)th->tsk;
-    th->tsk = 0;
-    mem_free(pool4k, mem, 1);
-    // yielding with a null task context returns
-    // the thread to general circulation
-    yield();
-
-    printf("tsk: should never get here ...\n");
+    return th->tsk->tid;
 }
-
 
 #if 0
 static char *
@@ -144,15 +61,114 @@ task_dbg(u64 tptr)
         th->scratch[0] = 0;
     return th->scratch;
 }
-#endif
 
-#if 0
-void
+// call this from watchdog
+// but race conditions are likely ...
+int
 task_debug(void)
 {
-    debug_mpmc_gate(runq, task_dbg);
+    if (runq_gate.len)
+        debug_mpmc_gate(runq, task_dbg);
+    return runq_gate.len;
 }
 #endif
+
+static inline void
+armv8_set_sp(u64 sp)
+{
+    asm volatile("mov sp, %0" : : "r" (sp) : );
+}
+
+void inline
+save_task_context(struct task * tsk)
+{
+    asm ("stp x19, x20, [%0, %c[x19o]]\n"
+         "stp x21, x22, [%0, %c[x19o] + 0x10]\n"
+         "stp x23, x24, [%0, %c[x19o] + 0x20]\n"
+         "stp x25, x26, [%0, %c[x19o] + 0x30]\n"
+         "stp x27, x28, [%0, %c[x19o] + 0x40]\n"
+         "stp fp,  lr,  [%0, %c[x19o] + 0x50]\n" : "=r" (tsk) : [x19o] "i" (X19_OFF) );
+
+    asm volatile("mov %0, sp"  : "=r" (tsk->sp) : );
+}
+
+void inline
+restore_task_context(struct task * tsk)
+{
+    asm ("ldp x19, x20, [%0, %c[x19o]]\n"
+         "ldp x21, x22, [%0, %c[x19o] + 0x10]\n"
+         "ldp x23, x24, [%0, %c[x19o] + 0x20]\n"
+         "ldp x25, x26, [%0, %c[x19o] + 0x30]\n"
+         "ldp x27, x28, [%0, %c[x19o] + 0x40]\n"
+         "ldp fp,  lr,  [%0, %c[x19o] + 0x50]\n" : "=r" (tsk) : [x19o] "i" (X19_OFF) );
+
+    asm volatile("mov sp,  %0" : : "r" (tsk->sp) : );
+    // gcc needs x0 loaded last (go look at the disassembly)
+    asm volatile("mov x0,  %0" : : "r" (tsk->x0) : );
+}
+
+// noinline forces a consistent stack frame
+void __attribute__ ((noinline))
+yield(void)
+{
+    volatile struct thread * th = get_thread_data();
+    //struct thread * th = get_thread_data();
+
+    if (th->tsk) {
+        // if this thread is a running task, save the restore point
+        save_task_context(th->tsk);
+        add_item(runq, th->tsk);
+        th->tsk = 0;
+    }
+
+    // get the next task to run (and wait if needed)
+
+    remove_item_wait(runq, th->tsk, struct task *);
+
+    // restore the selected task
+
+    restore_task_context(th->tsk);
+}
+
+// yield to other pending tasks for at least msecs miliseconds.
+// non-deterministic (not real-time) as we don't know when or if
+// another task will yield back to us.
+void __attribute__ ((noinline))
+yield_for(int msecs)
+{
+    u64 end = (u64)msecs * 1000 + etime();
+
+    while (end > etime()) {
+        yield();
+        //printf("  %10d > %10d\n", end, etime());      // debug
+    }
+}
+
+
+static void
+_start_task(struct task * tsk)
+{
+    //printf("task %ld [%s] starting   [arg=0x%x,tsk=0x%x]\n", tsk->tid, tsk->name, tsk->arg, tsk);
+    printf("task %6ld [%s] starting\n", tsk->tid, tsk->name);
+
+    tsk->func(tsk->arg);
+
+    printf("task %6ld [%s] ending\n", tsk->tid, tsk->name);
+
+    struct thread * th = get_thread_data();
+    // restore original thread stack (so we can use mem_free)
+    armv8_set_sp(th->sp);
+    // recover task data address
+    u64 mem = (u64)th->tsk;
+    th->tsk = 0;
+    mem_free(pool4k, mem, 1);
+
+    // yielding with a null task context returns
+    // the thread to general circulation
+    yield();
+
+    printf("tsk: should never get here ...\n");
+}
 
 
 int
@@ -163,8 +179,6 @@ create_task(char * name, taskfn func, volatile void * arg)
         return 1;
     }
 
-    //debug_mpmc_gate(runq, task_dbg);
-
 //#   define FAIL_IF_FULL
 #   ifdef FAIL_IF_FULL
     if (mpmc_gate_count(runq) >= RUNQ_HIWAT) {
@@ -173,7 +187,7 @@ create_task(char * name, taskfn func, volatile void * arg)
     }
 #   else
     while (mpmc_gate_count(runq) >= RUNQ_HIWAT)
-        usleep(100);
+        yield_for(1);
 #   endif
 
     struct task * tsk = (struct task *)mem_zalloc(pool4k, 1);
@@ -193,7 +207,7 @@ create_task(char * name, taskfn func, volatile void * arg)
     tsk->tid   = tid;
     tsk->func  = func;
     tsk->arg   = arg;
-    tsk->pc    = (u64)&_start_task;
+    tsk->lr    = (u64)&_start_task;
     tsk->sp    = stack;
     tsk->x0    = (u64)tsk;
     tsk->x19   = 0;
@@ -206,16 +220,85 @@ create_task(char * name, taskfn func, volatile void * arg)
     return 0;
 }
 
-inline char *
-get_task_name(void)
+// if the thread creating a task wants to join general circulation
+// while waiting for completion of the created task, we need to
+// be able to return to the current thread.
+//
+// yield_inclusive() queues the current thread context as an
+// additional task that ONLY the current thread can resume ...
+// its an unproven unthought-out epiphany ... but might prevent that
+// last core from being idle.
+void
+yield_inclusive(void)
 {
-    struct thread * th = get_thread_data();
-    return th->tsk->name;
-}
+    delay(1000);
 
-inline u64
-get_task_id(void)
-{
+#if 0
+    //volatile struct thread * th = get_thread_data();
     struct thread * th = get_thread_data();
-    return th->tsk->tid;
+
+    if (th->tsk) {
+        // if this thread is a running task, save the restore point
+        save_task_context(th->tsk);
+        add_item(runq, th->tsk);
+        th->tsk = 0;
+    } else {
+        // if there is no task context, create a fake task
+        struct task * ltsk = (struct task *)th->scratch;        // zmalloc?
+        printf("fake task %lx\n", ltsk);
+        th->tsk = ltsk;
+        memset(ltsk, 0, sizeof(struct task));
+        ltsk->name  = "msleep";
+        ltsk->tid = 0;
+        //ltsk->tid   = atomic_fetch_inc(next_tid);
+        ltsk->func  = 0;
+        ltsk->arg   = 0;
+        //ltsk->lr    = 0; //(u64)&_start_task;
+        //asm volatile("mov %0, sp"  : "=r" (ltsk->sp) : );
+        ltsk->x0    = 0; //(u64)tsk;
+        //ltsk->x19   = 0;
+        //ltsk->x20   = 0;
+        //ltsk->x21   = 0;
+
+        save_task_context(ltsk);
+        add_item(runq, ltsk);
+    }
+
+    // get the next task to run (and wait for it if needed)
+
+    remove_item_wait(runq, th->tsk, struct task *);
+
+    if (th->tsk->tid == 0  &&  th->thno != cpu_id())
+        printf("not mine %d cpu(%d)\n", th->tsk->tid, th->thno);
+
+    // restore the selected task
+
+    restore_task_context(th->tsk);
+#endif
+
+#if 0   // work-in-progress
+
+    // put our marker in the runq
+    if (th->tsk) {
+        save_task_context(th->tsk);
+        add_item(runq, th->tsk);
+        th->tsk = 0;
+    }
+
+    remove_item_wait(runq, th->tsk, struct task *);
+
+next:
+    struct task * tsk;
+    remove_item_wait(runq, tsk, struct task *);
+    if (tsk->tid == 0  &&  th->thno != cpu_id()) {
+        add_item(runq, tsk);                    // not ours, put it back
+        goto next;                              // and try another
+    }
+    th->tsk = tsk;
+
+
+    // restore the selected task
+
+    restore_task_context(th->tsk);
+#endif
 }

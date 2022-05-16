@@ -8,6 +8,7 @@ int     printf(const char * fmt, ...);
 void *  memset(void * s, int c, unsigned long n);
 void *  memcpy(void * dst, void * src, unsigned long n);
 void    memclr(void * vaddr, unsigned long size);
+void    usleep(int usecs);
 int     n_bits_set(u64 x);
 
 

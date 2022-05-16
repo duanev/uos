@@ -1,6 +1,10 @@
 
+// describe the thread local storage area,
+// this is private per-core RAM
+
 struct thread {
     u64             sp;         // boot.s expects this to be first
+                                // also used by libtask
     u64             thno;
     struct task *   tsk;
     void         (* func)(struct thread *);

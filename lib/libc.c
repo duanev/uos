@@ -310,6 +310,18 @@ n_bits_set(u64 x)
     return n;
 }
 
+// real-time sleep
+// see yield_for() for a cooperative sleep
+void
+usleep(int usecs)
+{
+    u64 end_time = usecs + etime();
+
+    while (end_time > etime())
+        delay(1);
+}
+
+
 void
 hexdump(void * buf, int count, u64 addr)
 {

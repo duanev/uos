@@ -19,28 +19,34 @@ places.
 
 ### Quick start
 
-Checkout the &mu;os repo, cd to it, then type `./umake` and it will show
-you what works (green), what has issues (yellow), and what is broken (red).
-Pick an architecture, the QEMU machine for starters, and an app:
+On a Linux system with QEMU installed, checkout the &mu;os repo, cd to it,
+then type `./umake` and it will show you what works (green), what has
+issues (yellow), and what is broken (red).  Pick an architecture (the QEMU
+machine is a good choice ;) and an app:
 
     ./umake armv8 qemu hello
     cd bulid-armv8-qemu-hello
 
-and run the qemu command offered. Edit something and run `../umake`.
+and run the qemu command offered at the bottom. Then maybe edit
+`../apps/hello/main.c` or something and run `../umake` to try your
+change.
 
 For now &mu;os is allways a static monolithic image.  [^1]
 
 ### Features
 
-- **SMP** is being debugged. (hey, is there an hvc or smc for rpi400's
-  start4.elf?)
+- **SMP** cores can be launched and given a thread via `smp_start_thread()`.
+  See `appd/testsmp/main.c`.  An ARMv8 hypervisor or secure monitor is
+  needed (QEMU has one builtin).  Can someone please point me to an HVC
+  or SMC for rpi400's (compute module 4) start4.elf?
 
 - No interrupts. Just use another core (you will like the improved latency).
 
-- **Multitasking** is also being debugged, and it is cooperative, *not
-  preemptive* (no interrupts).  Task code is all linked into the single
-  binary along with the OS.  A true general purpose multi-*application*
-  system with loadable binaries is not yet in the cards.
+- **Multitasking** is cooperative, *not preemptive* (no interrupts),
+  and there are likely still some bugs here despite the much more invloved
+  tests.  Still a single binary, so task code is all linked with &mu;os and
+  kicked off from `main()`.  A true general purpose multi-*application*
+  system with loadable binaries is not yet in the cards ...
 
 - Pretty near zero **device** support. Console i/o is there of course, but
   opportunities abound.  ;)
@@ -103,6 +109,17 @@ more critical attitude toward unnecessary complexity.
 
 Rewrite it all, learn from the past, only bring what we really need.
 
+### Notes/Bugs
+
+- QEMU -smp: Currently `MAX_CPUS` needs to be changed in the
+  apps/\*/mkvars file in addition to changing the -smp value.
+
+- The multitasking code is fragile, you likely want to cut-n-paste from
+  testtask/test.c, or hey, just use a core.
+
+- And did it seem like `volatile` never really did anything? Well here
+  it does! And finding a missing one can be a real test.
+
 ---
 
 [^1] Eventually I want the entire OS and all shared libraries to be
@@ -126,6 +143,12 @@ some thought.
 - (press 's' to single-step the active cpu, or 'S' for all of them)
 - (when done press 'Q' to exit both pgdb and qemu)
 - (if qemu is left running: ctrl-a,c will switch to the qemu monitor and 'quit' will exit)
+
+I'm noticing that lowercase 'j' is pretty spotty when walking through
+multi-task apps (can hang easily).  Uppercase 'J' appears to work more
+frequently (lets all the cpus run until one hits the breakpoint).  To get
+back to your cpu of choice, tab through the cpu windows and press 'enter'
+to change cpu contexts.
 
 ---
 _Markdown to HTML:_

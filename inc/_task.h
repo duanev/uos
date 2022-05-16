@@ -8,11 +8,12 @@
 
 typedef void (*taskfn)(volatile void *);
 
-int    create_task(char * name, taskfn func, volatile void * arg);
-void   usleep(int usecs);
-void   yield(void);
-void   task_debug(void);
+int     create_task(char * name, taskfn func, volatile void * arg);
+void    yield(void);
+void    yield_for(int msecs);
+void    yield_inclusive(void);
+int     task_debug(void);
 
-char * get_task_name(void);
-u64    get_task_id(void);
+char  * get_task_name(void);
+u64     get_task_id(void);
 

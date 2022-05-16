@@ -91,7 +91,7 @@
 
 #define mpmc_gate_count(name)       (name##_gate.len)
 
-#define remove_item_wwait(name, item, type) {                               \
+#define remove_item_wait(name, item, type) {                                \
     int idx = atomic_fetch_inc(name##_gate.start) & QUEUE_SIZE_MASK(name);  \
     while (name##_gate.queue[idx] == 0) pause(name##_gate);                 \
     item = (type)name##_gate.queue[idx];                                    \
@@ -128,6 +128,7 @@
            name##_gate.start, name##_gate.start & mask,                     \
            name##_gate.end,   name##_gate.end   & mask);                    \
     for (int k = 0; k <= mask; k++)                                         \
+      if (name##_gate.queue[k])                                             \
         printf("%s slot(%d,%lx) %s\n", #name, k, name##_gate.queue[k],      \
                                        fn(name##_gate.queue[k]));           \
 }
@@ -143,7 +144,7 @@
 #define debug_spmc_gate(name)
 #define MPMC_GATE_INIT(name, size)
 #define mpmc_gate_count(name)
-#define remove_item_wwait(name, item, type)
+#define remove_item_wait(name, item, type)
 #define add_item(name, item)
 #define add_item(name, item)
 #define debug_mpmc_gate(name, fn)

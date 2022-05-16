@@ -58,8 +58,8 @@ start:
 
     bl      main
 
-    ldr     x0, =msg_done
-    bl      con_puts
+    ldr     x0, =msg_done           // on smp this message is not gated,
+    bl      con_puts                // hence it can intermix with other threads
 
 //  ldr     x0, =0x84000009         // system reset
 //  hvc     0                       // secure monitor / hypervisor call fn 0

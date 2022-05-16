@@ -1,0 +1,6 @@
+SRCS += libarch libc libmem libbitmap mem_init libsmp libtask test main
+DFLAGS += -DMAX_CPUS=8
+QEMU_RUN_CMD += -smp 8
+MEM_SIZE = 32
+WORKS = qemu
+BROKEN = rpi400 {need an hvc/smc cpu_on function}

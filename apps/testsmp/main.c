@@ -46,8 +46,11 @@ main(int ac, char * av[])
 
     smp_start_thread(work_thread, 0);
     smp_start_thread(work_thread, 0);
-    // assign the fourth cpu to run the watchdog thread
-    smp_start_thread(watchdog, 0);
+    // assign a fourth cpu to run the watchdog thread
+    if (smp_start_thread(watchdog, 0) != 0) {
+        printf("insufficient cpus (%d) to start watchdog, aborting.\n", ncpus);
+        return;
+    }
     printf("[5mpress 'q' five times to quit[0m\n");
 
     // and cpu0 can go do the work_thread too
